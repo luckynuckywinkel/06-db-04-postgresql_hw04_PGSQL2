@@ -159,7 +159,23 @@ test_database=# \dt+
 (1 row)
 ```
 
-- 
+- Проведем **ANALYZE** таблицы orders, посмотрим в шпаргалку и составим нужный нам запрос:
+
+```
+test_database=# SELECT attname, avg_width
+FROM pg_stats
+WHERE tablename = 'orders'
+ORDER BY avg_width DESC
+LIMIT 5;
+ attname | avg_width
+---------+-----------
+ title   |        16
+ id      |         4
+ price   |         4
+(3 rows)
+```
+
+---
 
 ## Задача 3
 
@@ -169,18 +185,97 @@ test_database=# \dt+
 
 Предложите SQL-транзакцию для проведения этой операции.
 
-Можно ли было изначально исключить ручное разбиение при проектировании таблицы orders?
+Можно ли было изначально исключить ручное разбиение при проектировании таблицы orders?  
+
+### Решение:    
+
+- Прочитав про методы шардирования в данном простом случае, я думаю, что нам нужно сделать следующее - создать две дополнительные таблицы orders_over_400 и order_less_400 (да, названия громоздкие, но, так лучше для понимания), составить запрос для переноса нужных данных, добавить индексы (опционально, если мы рассматриваем еще большее ускорение поиска по столбцу price), удаление старой таблицы orders.
+
+- Попробуем проделать все написанное выше:
+
+```
+test_database=# create table orders_over_400 (like orders);
+CREATE TABLE
+test_database=# create table orders_less_400 (like orders);
+CREATE TABLE
+test_database=# insert into orders_over_400 select * from orders where price > 400;
+INSERT 0 4
+test_database=# insert into orders_less_400 select * from orders where price <= 400;
+INSERT 0 4
+test_database=# create index over_400 ON orders_over_400 (price);
+CREATE INDEX
+test_database=# create index less_400 ON orders_less_400 (price);
+CREATE INDEX
+test_database=# drop table orders;
+test_database=# \dt
+              List of relations
+ Schema |      Name       | Type  |  Owner
+--------+-----------------+-------+----------
+ public | orders_less_400 | table | postgres
+ public | orders_over_400 | table | postgres
+(2 rows)
+```
+
+- Перечитал задание и там сказано, что нужно делать все одной транзакцией. Т.к. я уже все сделал запросами построчно, то я не буду переделывать, а просто наришу, как выглядела бы транзакция:
+
+```
+BEGIN;
+CREATE TABLE orders_over_400 (LIKE orders);
+CREATE TABLE orders_less_400 (LIKE orders);
+INSERT INTO orders_over_400 SELECT * FROM orders WHERE price > 499;
+INSERT INTO orders_less_400 SELECT * FROM orders WHERE price <= 499;
+CREATE INDEX over_400 ON orders_over_400 (price);
+CREATE INDEX less_400 ON orders_less_400 (price);
+DROP TABLE orders;
+COMMIT;
+```
+
+- Можно ли было изначально исключить ручное разбиение при проектировании таблицы orders - думаю, да. В зависимости от того, как изначально ставилась задача. Если заказчик предполагал, что таблица будет расти быстро, то вариант масштабирования должен был быть заложен перед созданием таблицы. Думаю, так было бы сложнее на начальном этапе, конечно.
+
+---
+
+
+
+
+
+
 
 ## Задача 4
 
 Используя утилиту `pg_dump`, создайте бекап БД `test_database`.
 
-Как бы вы доработали бэкап-файл, чтобы добавить уникальность значения столбца `title` для таблиц `test_database`?
+Как бы вы доработали бэкап-файл, чтобы добавить уникальность значения столбца `title` для таблиц `test_database`?  
 
+### Решение:  
+
+- Создадим backup в sql-файл:
+
+```
+# pg_dump -U postgres -d test_database -f /var/lib/postgresql/backup/test_database_dump.sql
+```
+
+- Для начала, я прочел, что такое **UNIQUE** и как его можно определить для столбца. Определить его можно при помощи добавления некоего ограничения (**ADD CONSTRAINT**), коим для нас и будет ограничение Unique - то есть, все значения в столбце должны быть уникальными и не должны повторяться.
+
+- Т.к. мы имеем бэкап в sql-формате, мы запросто можем его редактировать, как нам нужно. В нашем случае, мы добавим следюующую строку в наш дамп:
+
+```
+CREATE TABLE public.orders_less_400 (
+    id integer NOT NULL,
+    title character varying(80) NOT NULL,
+    price integer,
+    CONSTRAINT unique_less_400 UNIQUE (title)  <-- вот это раз
+);
+
+ALTER TABLE public.orders_less_400 OWNER TO postgres;
+....
+CREATE TABLE public.orders_over_400 (
+    id integer NOT NULL,
+    title character varying(80) NOT NULL,
+    price integer,
+    CONSTRAINT unique_over_400 UNIQUE (title)  <-- вот это два
+);
+
+ALTER TABLE public.orders_over_400 OWNER TO postgres;
 ---
 
-### Как cдавать задание
 
-Выполненное домашнее задание пришлите ссылкой на .md-файл в вашем репозитории.
-
----
