@@ -96,6 +96,69 @@ test_db=# \q
 
 ### Решение:  
 
+- Восстановим дамп в чистую базу и проверим, что все ок:
+
+```
+postgres=# create database test_database;
+CREATE DATABASE
+postgres=# \l
+                                   List of databases
+     Name      |  Owner   | Encoding |  Collate   |   Ctype    |   Access privileges
+---------------+----------+----------+------------+------------+-----------------------
+ postgres      | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
+ template0     | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+               |          |          |            |            | postgres=CTc/postgres
+ template1     | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+               |          |          |            |            | postgres=CTc/postgres
+ test_database | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
+ test_db       | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
+(5 rows)
+
+postgres=# \q
+# psql -d test_database -U postgres -f /var/lib/postgresql/backup/test_dump.sql
+SET
+SET
+SET
+SET
+SET
+ set_config
+------------
+
+(1 row)
+
+SET
+SET
+SET
+SET
+SET
+SET
+CREATE TABLE
+ALTER TABLE
+CREATE SEQUENCE
+ALTER TABLE
+ALTER SEQUENCE
+ALTER TABLE
+COPY 8
+ setval
+--------
+      8
+(1 row)
+
+ALTER TABLE
+# psql -U postgres
+psql (12.16 (Debian 12.16-1.pgdg110+1))
+Type "help" for help.
+
+postgres=# \c test_database
+You are now connected to database "test_database" as user "postgres".
+test_database=# \dt+
+                       List of relations
+ Schema |  Name  | Type  |  Owner   |    Size    | Description
+--------+--------+-------+----------+------------+-------------
+ public | orders | table | postgres | 8192 bytes |
+(1 row)
+```
+
 - 
 
 ## Задача 3
