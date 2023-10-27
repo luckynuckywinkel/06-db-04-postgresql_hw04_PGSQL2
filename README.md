@@ -30,6 +30,53 @@
 - выхода из psql - \quit или \q
 ```
 
+- Повыполняем эти команды:
+
+```
+postgres=# \l
+                                 List of databases
+   Name    |  Owner   | Encoding |  Collate   |   Ctype    |   Access privileges
+-----------+----------+----------+------------+------------+-----------------------
+ postgres  | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
+ template0 | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+           |          |          |            |            | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+           |          |          |            |            | postgres=CTc/postgres
+ test_db   | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
+(4 rows)
+
+postgres=# \c test_db
+You are now connected to database "test_db" as user "postgres".
+test_db=# \dt+
+                       List of relations
+ Schema |  Name   | Type  |  Owner   |    Size    | Description
+--------+---------+-------+----------+------------+-------------
+ public | clients | table | postgres | 16 kB      |
+ public | orders  | table | postgres | 8192 bytes |
+(2 rows)
+
+test_db=# \d clients
+                                     Table "public.clients"
+  Column  |          Type          | Collation | Nullable |               Default
+----------+------------------------+-----------+----------+-------------------------------------
+ id       | integer                |           | not null | nextval('clients_id_seq'::regclass)
+ lastname | character varying(255) |           |          |
+ country  | character varying(255) |           |          |
+ purchase | integer                |           |          |
+Indexes:
+    "clients_pkey" PRIMARY KEY, btree (id)
+    "index_country" btree (country)
+Foreign-key constraints:
+    "clients_purchase_fkey" FOREIGN KEY (purchase) REFERENCES orders(id)
+
+test_db=# \q
+#
+```
+
+---
+
+
+
 ## Задача 2
 
 Используя `psql`, создайте БД `test_database`.
@@ -45,7 +92,11 @@
 Используя таблицу [pg_stats](https://postgrespro.ru/docs/postgresql/12/view-pg-stats), найдите столбец таблицы `orders` 
 с наибольшим средним значением размера элементов в байтах.
 
-**Приведите в ответе** команду, которую вы использовали для вычисления, и полученный результат.
+**Приведите в ответе** команду, которую вы использовали для вычисления, и полученный результат.  
+
+### Решение:  
+
+- 
 
 ## Задача 3
 
